@@ -6,6 +6,8 @@
 //! Copyright, all right if you insist
 //!
 
+//! More examples from here. https://bisqwit.iki.fi/story/howto/openmp/#IntroductionToOpenmpInC
+
 #include <iostream>			// cout
 #include <iomanip>			// setw()
 #include <omp.h>
@@ -19,45 +21,44 @@ void SimpleAdding()
 {
 	double wtime;
 
-	timestamp ( );
-	cout << "\n";
+	timestamp( );
+	cout << endl;
 	cout << "SIMPLEADD_OPENMP\n";
 	cout << "  C++/OpenMP version\n";
 
-	cout << "\n";
-	cout << "  Number of processors available = " << omp_get_num_procs ( ) << "\n";
-	cout << "  Number of threads =              " << omp_get_max_threads ( ) << "\n";
+	cout << endl;
+	cout << "  Number of processors available = " << omp_get_num_procs ( ) << endl;
+	cout << "  Number of threads =              " << omp_get_max_threads ( ) << endl;
 
-	wtime = omp_get_wtime ( );
-
-	int i;
-	int j;
-	int n=1000;
+	int i, j;
+	int n=10000;
 	int sum;
-	int total = 0;
+	long long total_nomp = 0;
 
 	double wtime_nomp = omp_get_wtime ( );
 
-	for ( i = 0; i < n; i++ )
+	for ( i = 1; i <= n; i++ )
 	{
-		for( j = 0; j< n; j++)
+		for( j = 1; j<= n; j++)
 		{
 			sum = i + j;
-			total += sum;
+			total_nomp += sum;
 		}
 	}
 	wtime_nomp = omp_get_wtime ( ) - wtime_nomp;
 
-	total = 0; // reset total
+	long long total = 0; // reset total
+
+	wtime = omp_get_wtime ( );
 
 #pragma omp parallel \
 		shared ( n ) \
 private ( i, j, sum )
 
 #pragma omp for reduction ( + : total )
-	for ( i = 0; i < n; i++ )
+	for ( i = 1; i <= n; i++ )
 	{
-		for( j = 0; j< n; j++)
+		for( j = 1; j<= n; j++)
 		{
 			sum = i  + j;
 			total += sum;
@@ -66,11 +67,21 @@ private ( i, j, sum )
 
 	wtime = omp_get_wtime ( ) - wtime;
 
-	cout << "\n";
-	cout << "Total = " << setw(8) << total << endl;
+	cout << endl;
+	if(total != total_nomp)
+	{
+		cout << "PARALLEL NOT THE SAME!!!" << endl;
+		cout << "total_nomp = " << setw(8) << total_nomp << endl;
+		cout << "total = " << setw(8) << total << endl;
+	}
 	cout << "  Elapsed time1 (slow) = " << wtime_nomp << endl;
 	cout << "  Elapsed time = " << wtime << endl;
-	cout << "  % increase = " << (wtime_nomp-wtime)/wtime*100 << endl;
+	double increase = (wtime_nomp-wtime)/wtime_nomp*100;
+	cout << "  % increase = " << increase << endl;
+	if(increase < 0.0)
+	{
+		cout << "  parallelism don't work with such short loops" << endl;
+	}
 	//
 	//  Terminate.
 	//
